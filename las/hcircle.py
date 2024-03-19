@@ -144,12 +144,11 @@ dmrgscf.settings.BLOCKSCRATCHDIR = os.path.join(lib.param.TMPDIR, str(os.getpid(
 dmrgscf.settings.MPIPREFIX = "" 
 
 class HDMRG(HCircle):
-    def __init__(self,dist,num_h,mval,scrdir="./dmrg_scrdir"):
+    def __init__(self,dist,num_h,mval):
         self.data_name = f"hcircle_dmrg{num_h}_d{int(dist*10)}_m{mval}"
         super().__init__(dist,num_h,2,fn=f"{self.data_name}.log")
         self.mval = mval
         self.rundir = f"./{self.data_name}/"
-        self.scrdir = scrdir
 
     def make_casci(self,charge):
         mol = self.get_mol()
@@ -164,13 +163,16 @@ class HDMRG(HCircle):
         return mc
 
     def make_dmrg(self,charge):
+        scrdir = f"/scratch/midway3/king1305/{self.data_name}_charge{charge}"
+        if os.path.isdir(scrdir):
+            os.system(f"rm -r {scrdir}")
         mc = self.make_casci(charge)
         mc.fcisolver = dmrgscf.DMRGCI(mc.mol,maxM=self.mval)
         mc.fcisolver.threads = lib.num_threads()
         mc.fcisolver.spin = mc.mol.spin # setting to default spin here
         mc.fcisolver.memory = int(mc.mol.max_memory / 1000)
         mc.fcisolver.runtimeDir = f"{self.rundir}charge{charge}/"
-        mc.fcisolver.scratchDirectory = f"{self.scrdir}/"
+        mc.fcisolver.scratchDirectory = scrdir
         mc.fcisolver.block_extra_keyword = ["onepdm"]
         mc.verbose = 4
         mc.canonicalization = False
