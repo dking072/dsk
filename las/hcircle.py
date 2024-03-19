@@ -52,7 +52,7 @@ class HCircle:
             atms += [(el,(x,0,y))]
         mol.atom = atms
         mol.basis = "sto-3g"
-        mol.output = self.fn
+        # mol.output = self.fn
         mol.verbose = lib.logger.INFO
         mol.symmetry = False
         mol.build()
@@ -177,6 +177,16 @@ class HDMRG(HCircle):
         mc.verbose = 4
         mc.canonicalization = False
         return mc
+
+    def dryrun(self,charge):
+        mc = self.make_dmrg(charge)
+        dmrgscf.dryrun(mc)
+        cwd = os.getcwd()
+        print("Running DMRG...")
+        os.chdir(mc.fcisolver.runtimeDir)
+        os.system("block2main dmrg.conf")
+        os.chdir(cwd)
+        return self.get_energy(mc)
 
     def get_energy(self,mc):
         fn = mc.fcisolver.runtimeDir
