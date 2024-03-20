@@ -277,5 +277,74 @@ class CCircle(HCircle):
         self.frag_atoms = frag_atoms
         return las
 
+class CDMRG(CCircle):
+    def __init__(self,dist,num_h,mval):
+        self.data_name = f"ccircle_dmrg{num_h}_d{int(dist*100)}_m{mval}"
+        super().__init__(dist,num_h,2,fn=f"{self.data_name}.log")
+        self.mval = mval
+        self.rundir = f"./{self.data_name}/"
+
+    def make_casci(self,charge):
+        mol = self.get_mol()
+        mol.charge = charge
+        mol.spin = mol.nelectron%2
+        mol.build()
+
+        ncoreao = len(mol._atom)
+        ncoreelec = 2*len(mol._atom)
+
+        nelecas,ncas = mol.nelectron - ncoreelec, mol.nao - ncoreao
+        twos = mol.spin
+        mc = mcscf.CASCI(mol,ncas,nelecas)
+        mc.mo_coeff = self.make_las_init_guess().mo_coeff
+        return mc
+
+
+    def make_dmrg(self,charge):
+        scrdir = f"/scratch/midway3/king1305/{self.data_name}_charge{charge}"
+        if os.path.isdir(scrdir):
+            os.system(f"rm -r {scrdir}")
+        mc = self.make_casci(charge)
+        mc.fcisolver = dmrgscf.DMRGCI(mc.mol,maxM=self.mval)
+        mc.fcisolver.threads = lib.num_threads()
+        mc.fcisolver.spin = mc.mol.spin # setting to default spin here
+        mc.fcisolver.memory = int(mc.mol.max_memory / 1000)
+        mc.fcisolver.runtimeDir = f"{self.rundir}charge{charge}/"
+        mc.fcisolver.scratchDirectory = scrdir
+        mc.fcisolver.block_extra_keyword = ["onepdm"]
+        mc.verbose = 4
+        mc.canonicalization = False
+        return mc
+
+    def dryrun(self,charge):
+        mc = self.make_dmrg(charge)
+        dmrgscf.dryrun(mc)
+        cwd = os.getcwd()
+        print("Running DMRG...")
+        os.chdir(mc.fcisolver.runtimeDir)
+        os.system("block2main dmrg.conf > dmrg.out")
+        os.chdir(cwd)
+        return self.get_energy(mc)
+
+    def get_energy(self,mc):
+        fn = mc.fcisolver.runtimeDir
+        fn = f"{fn}/dmrg.out"
+        with open(fn,"r") as f:
+            lines = f.readlines()
+        dws = []
+        for line in lines:
+            if "DMRG Energy =" in line:
+                e = line.strip().split("=")[-1]
+            if "DW =" in line:
+                dws += [line.strip().split("|")[-1].split("=")[-1]]
+        e = float(e)
+        dws = np.array(dws).astype(float)
+        return e, dws[-1]
+
+    def run_dmrg(self,charge):
+        mc = self.make_dmrg(charge)
+        mc.kernel()
+        e, dw = self.get_energy(mc)
+        return e, dw
 
     
