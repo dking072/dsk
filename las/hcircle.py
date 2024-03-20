@@ -184,7 +184,7 @@ class HDMRG(HCircle):
         cwd = os.getcwd()
         print("Running DMRG...")
         os.chdir(mc.fcisolver.runtimeDir)
-        os.system("block2main dmrg.conf")
+        os.system("block2main dmrg.conf > dmrg.out")
         os.chdir(cwd)
         return self.get_energy(mc)
 
@@ -208,6 +208,74 @@ class HDMRG(HCircle):
         mc.kernel()
         e, dw = self.get_energy(mc)
         return e, dw
+
+class CCircle(HCircle):
+    def get_mol(self,basis="sto-3g",plot=False):
+        rnum = self.dist**2
+        rdenom = 2*(1-np.cos(2*np.pi/self.num_h))
+        radius = np.sqrt(rnum/rdenom)
+        
+        def polygon(sides, radius=1, rotation=0, translation=None):
+            one_segment = np.pi * 2 / sides
+        
+            points = [
+                (math.sin(one_segment * i + rotation) * radius,
+                 math.cos(one_segment * i + rotation) * radius)
+                for i in range(sides)]
+        
+            if translation:
+                points = [[sum(pair) for pair in zip(point, translation)]
+                          for point in points]
+        
+            return points
+
+        points = polygon(self.num_h,radius)
+        df = pd.DataFrame(points,columns=["x","y"])
+        df["el"] = "C"
+
+        if plot:
+            plt.scatter(df["x"],df["y"])
+            plt.gca().set_aspect('equal')
+        
+        mol = gto.Mole()
+        atms = []
+        for i,row in df.iterrows():
+            x,y,el = row["x"],row["y"],row["el"]
+            atms += [(el,(x,0,y))]
+        mol.atom = atms
+        mol.basis = "sto-3g"
+        mol.output = self.fn
+        mol.verbose = lib.logger.INFO
+        mol.symmetry = False
+        mol.build()
+        return mol
+
+    def make_las_init_guess(self):
+        from mrh.my_pyscf.mcscf.lasscf_o0 import LASSCF
+        from mrh.my_pyscf.lassi import lassi
+        from dsk.las import sign_control
+
+        mf = self.make_and_run_hf()
+        mol = mf.mol
+        nfrags = self.nfrags
+        ncoreao = nfrags*self.num_h_per_frag
+        ncoreelec = nfrags*self.num_h_per_frag*2
+        nao_per_frag = (mol.nao - ncoreao) // nfrags
+        nelec_per_frag = (mol.nelectron - ncoreelec) // nfrags
+        natoms_per_frag = len(mol._atom)//nfrags
+        
+        ref_orbs = [nao_per_frag]*(nfrags)
+        ref_elec = [nelec_per_frag]*(nfrags)
+        las = LASSCF(mf, ref_orbs, ref_elec)
+
+        frag_atoms = [[natoms_per_frag*i+j for j in range(natoms_per_frag)] for i in range(nfrags)]
+        las.mo_coeff = las.localize_init_guess(frag_atoms, mf.mo_coeff)
+        las.mo_coeff = sign_control.fix_mos(las)
+
+        self.ref_orbs = ref_orbs
+        self.ref_elec = ref_elec
+        self.frag_atoms = frag_atoms
+        return las
 
 
     
