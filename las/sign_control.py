@@ -2,7 +2,7 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-def fix_mos(las):
+def fix_mos(las,verbose=False):
     mo = las.mo_coeff
     ref_orbs = las.ncas_sub
     s = las.mol.intor("int1e_ovlp")
@@ -25,7 +25,11 @@ def fix_mos(las):
     for i in range(mo_offset):
         idx = [mo_offset*j+i for j in range(nfrags)]
         transmo = transmos[:,idx]
-        sign = np.linalg.multi_dot([transmo.T,s,transmo])[0] < 0
+        ovlp = np.linalg.multi_dot([transmo.T,s,transmo])[0]
+        assert(np.allclose(np.abs(ovlp),np.ones(len(ovlp)),atol=1e-1))
+        if verbose:
+            print(f"orbital {i}:",ovlp)
+        sign = ovlp < 0
         sign = np.ones(transmo.shape[1]) - 2*sign
         sign = sign.reshape(1,transmo.shape[-1])
         mos[:,idx] = mos[:,idx]*sign
