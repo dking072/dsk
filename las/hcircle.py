@@ -156,10 +156,12 @@ class HDMRG(HCircle):
         mol.spin = mol.nelectron%2
         mol.build()
 
-        nelecas,ncas = mol.nelectron, mol.nao
+        las = self.make_las_init_guess()
+        ncas = las.ncas
+        nelecas = sum(las.nelecas) - mol.charge
         twos = mol.spin
         mc = mcscf.CASCI(mol,ncas,nelecas)
-        mc.mo_coeff = self.make_las_init_guess().mo_coeff
+        mc.mo_coeff = las.mo_coeff
         return mc
 
     def make_dmrg(self,charge):
@@ -182,7 +184,7 @@ class HDMRG(HCircle):
         mc = self.make_dmrg(charge)
         dmrgscf.dryrun(mc)
         cwd = os.getcwd()
-        print("Running DMRG...")
+        print(f"Running DMRG (charge {charge})...")
         os.chdir(mc.fcisolver.runtimeDir)
         os.system("block2main dmrg.conf > dmrg.out")
         os.chdir(cwd)
