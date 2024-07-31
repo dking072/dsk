@@ -6,6 +6,7 @@ import math
 import matplotlib.pyplot as plt
 import seaborn as sns
 from . import bandh
+from dsk.pickle import dump_pkl, load_pkl
 
 def las_charges(las):
     las_charges = [[fcisolver.charge for fcisolver in las.fciboxes[i].fcisolvers] for i in range(len(las.fciboxes))]
@@ -13,8 +14,16 @@ def las_charges(las):
     return las_charges
 
 class LASdata:
-    def __init__(self,data,pkl_fn=None):
-        energies = data["energies"]
+    def __init__(self,data=None,pkl_fn=None,pdft=True):
+        if data is None:
+            data = load_pkl(pkl_fn)
+        if not pdft:
+            if "energies_lassi" in data.keys():
+                energies = data["energies_lassi"]
+            else:
+                energies = data["energies"]
+        else:
+            energies = data["energies_lassipdft"]
         civecs = data["civecs"]
         charges = data["charges"]
         self.data = data
@@ -27,6 +36,41 @@ class LASdata:
     def get_lumo(self):
         e,k = bandh.calc_lumo(self.hdct).values()
         return e,k
+
+class DMRGdata:
+    def __init__(self,csv_fn):
+        df = pd.read_csv(csv_fn,index_col=0)
+        self.df = df.copy()
+        hartree_to_ev = 27.2114
+        df["e"] = df["e"]*hartree_to_ev
+        self.df = df
+        # assert((df["dw"] < 1e-10).all())
+        self.homo = df.loc[0,"e"] - df.loc[1,"e"]
+        self.lumo = df.loc[-1,"e"] - df.loc[0,"e"]
+        print(df["dw"])
+
+class PeriodicData: #Periodic
+    def __init__(self,csv_fn):
+        self.df = pd.read_csv(csv_fn,index_col=0)
+        self.mo_occ = self.df.loc["nocc"]
+        self.df = self.df.drop("nocc")
+        self.hartree_to_ev = 27.2114
+
+    def get_homo(self):
+        df = self.df.copy()
+        homo_idx = np.where(self.mo_occ == 2)[0][-1]
+        k = np.array(self.df.index).astype(float)
+        energies = self.df.iloc[:,homo_idx].values
+        energies *= self.hartree_to_ev
+        return energies,k
+
+    def get_lumo(self):
+        df = self.df.copy()
+        lumo_idx = np.where(self.mo_occ == 0)[0][0]
+        k = np.array(self.df.index).astype(float)
+        energies = self.df.iloc[:,lumo_idx].values
+        energies *= self.hartree_to_ev
+        return energies,k
 
 def plot_charges(charges,labels):
     df = pd.DataFrame()
@@ -114,18 +158,5 @@ def plot_charges(charges,labels):
             ha=alignment, 
             va='center', 
             rotation=rotation, 
-            rotation_mode="anchor") 
-
-#For handling DMRG data:
-# class DMRGdata:
-#     def __init__(self,csv_fn):
-#         df = pd.read_csv(csv_fn,index_col=0)
-#         self.df = df.copy()
-#         hartree_to_ev = 27.2114
-#         df["e"] = df["e"]*hartree_to_ev
-#         self.df = df
-#         # assert((df["dw"] < 1e-10).all())
-#         self.homo = df.loc[0,"e"] - df.loc[1,"e"]
-#         self.lumo = df.loc[-1,"e"] - df.loc[0,"e"]
-#         print(df["dw"])
+            rotation_mode="anchor")
 

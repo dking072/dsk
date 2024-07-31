@@ -23,10 +23,10 @@ def make_hdct(civecs_lassi,energies_lassi,las_charges,plot=False):
     return hdct
 
 def copy_bz(energies,k):
-    energies = np.hstack([energies,energies[::-1]])
-    k = np.hstack([k,k+0.5])
+    energies = np.hstack([energies,energies])
+    k = np.hstack([k,0.5 - (k-0.5)]) #reflection around 0.5
     return energies,k
-
+    
 def calc_disp(civecs):
     avgk = []
     for i in range(civecs.shape[1]):
