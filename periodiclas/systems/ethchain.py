@@ -10,13 +10,17 @@ from .hcircle import HCircle
 from dsk.periodiclas.tools import rotsym, sign_control
 
 class EthChain_CT(HCircle):
-    def __init__(self,nfrags,dist=2.5,c_dist=1.4,fn="output.log"):
+    def __init__(self,nfrags,charge=1,dist=2.5,c_dist=1.4,fn="output.log",basis="3-21g"):
+        #charge = 1 --> hole transport
+        #charge = -1 --> electron transport
         self.nfrags = nfrags
         self.dist = dist
+        self.basis = basis
         self.c_dist = c_dist
         self.fn = fn
+        self.charge = charge
 
-    def get_mol(self,basis="sto-3g",plot=False):
+    def get_mol(self,plot=False):
         mol = gto.Mole()
         mol.atom = atms = [
         ['C', (0, 0,  self.c_dist/2)],
@@ -28,7 +32,7 @@ class EthChain_CT(HCircle):
         ]
         
         mol.build()
-        mol.basis = basis
+        mol.basis = self.basis
         mol.output = self.fn
         mol.verbose = lib.logger.INFO
         mol.build()
@@ -100,7 +104,7 @@ class EthChain_CT(HCircle):
         for i in range(nfrags):
             charges = base_charges.copy()
             spins = base_spins.copy()
-            charges[i] = -1
+            charges[i] = self.charge
             spins[i] = 1
             las_charges += [charges]
             las_spins += [spins]
