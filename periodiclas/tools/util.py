@@ -3,8 +3,6 @@ from pyscf import gto, scf, lib, mcscf
 import time
 import pandas as pd
 import math
-import matplotlib.pyplot as plt
-import seaborn as sns
 from . import bandh
 import pickle
 

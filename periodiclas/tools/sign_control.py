@@ -1,5 +1,4 @@
 import numpy as np
-# import matplotlib.pyplot as plt
 
 def fix_mos(las,verbose=False):
     mo = las.mo_coeff

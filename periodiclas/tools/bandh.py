@@ -1,7 +1,5 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 def make_h(civecs_lassi,energies_lassi,plot=False,prnt=True):
     H = np.zeros((civecs_lassi.shape[0],civecs_lassi.shape[0]))
