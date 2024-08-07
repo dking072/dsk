@@ -9,12 +9,13 @@ from mrh.my_pyscf.lassi import lassi
 from dsk.periodiclas.tools import rotsym, sign_control
 
 class HCircle:
-    def __init__(self,dist,num_h,num_h_per_frag,fn="output.log"):
+    def __init__(self,dist,num_h,num_h_per_frag,fn="output.log",density_fit=False):
         self.dist = dist
         self.num_h = num_h
         self.num_h_per_frag = num_h_per_frag
         self.nfrags = num_h // num_h_per_frag
         self.fn = fn
+        self.density_fit = density_fit
         assert(self.num_h % self.num_h_per_frag == 0)
         assert(self.nfrags%2 == 0)
 
@@ -60,7 +61,11 @@ class HCircle:
 
     def make_and_run_hf(self):
         mol = self.get_mol()
-        mf = scf.ROHF(mol)
+        if self.density_fit:
+            print("Running ROHF with density fitting...")
+            mf = scf.ROHF(mol).density_fit()
+        else:
+            mf = scf.ROHF(mol)
         mf.kernel()
         self.mf_coeff = mf.mo_coeff
         self.mf_occ = mf.mo_occ

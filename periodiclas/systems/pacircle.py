@@ -10,7 +10,7 @@ from .hcircle import HCircle
 from dsk.periodiclas.tools import rotsym, sign_control
 
 class PACircle(HCircle):
-    def __init__(self,dist,ncells,n_per_frag=1,fn="output.log",basis="3-21g"):
+    def __init__(self,dist,ncells,n_per_frag=1,fn="output.log",basis="3-21g",density_fit=False):
         self.dist = dist
         self.ncells = ncells
         self.basis = basis
@@ -18,6 +18,7 @@ class PACircle(HCircle):
         assert(ncells % n_per_frag == 0)
         self.nfrags = self.ncells // self.n_per_frag
         self.fn = fn
+        self.density_fit = density_fit
 
     def get_mol(self,plot=False):
         atms = [
