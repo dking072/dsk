@@ -30,8 +30,8 @@ parser.add_argument("-q", "--queue", default="savio4_gpu", help="Partition to su
 parser.add_argument("-g", "--gpus", default=1, type=int,help="Number of gpus to request (default: %(default)s)")
 parser.add_argument("-gtyp", "--gpu_type", default="A5000", help="GPU type to request (default: %(default)s)")
 parser.add_argument("-t", "--time", default=72, type=int, help="Number of hours (default: %(default)s)")
-parser.add_argument("-qos", "--qos", default="12monkeys_gpu4_normal", help="Number of hours (default: %(default)s)")
-#other options -- savio_debug, savio_lowprio
+parser.add_argument("-qos", "--qos", default="savio_lowprio", help="Number of hours (default: %(default)s)")
+#other options -- 12monkeys_gpu4_normal
 
 #Options
 parser.add_argument("-test", "--dont_submit", action="store_true", help="Only write pbs files (don't submit to queue, useful for testing) (default: %(default)s)")
@@ -57,7 +57,8 @@ def main():
 def confirm_settings():
     print("Submission overview:")
     print("Queue: ", str(args.queue))
-    print("GPUs: ", str(args.procs))
+    print("QOS: ",str(args.qos))
+    print("GPUs: ", str(args.gpus))
     print("Walltime: ", str(args.time) + " hours")
     print("Keep scripts: ", str(args.keep_scripts))
 
@@ -76,8 +77,8 @@ def write_slurm(method_name):
     init_lines = [
     "#!/bin/bash\n\n",
     "#SBATCH --ntasks=1\n",
-    "#SBATCH --account=co-12monkeys\n",
-    f"#SBATCH --qos=savio_debug\n",
+    "#SBATCH --account=co_12monkeys\n",
+    f"#SBATCH --qos={args.qos}\n",
     f"#SBATCH --gres=gpu:{args.gpu_type}:{args.gpus}\n",
     f"#SBATCH --cpus-per-task={procs}\n",
     f"#SBATCH --time={args.time}:00:00\n",
@@ -86,8 +87,6 @@ def write_slurm(method_name):
     f"#SBATCH --output={method_name}.log\n",
     ]
     init_lines += ["\n"]
-
-    mem_mb = int(args.mem*1000)
 
     with open(slurm_name,'w+') as f:
         for line in init_lines:
