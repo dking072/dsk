@@ -89,7 +89,7 @@ def write_slurm(method_name):
     f"#SBATCH --output={method_name}.log\n",
     ]
     if args.requeue:
-        linit_lines += [f"#SBATCH --requeue\n"]
+        init_lines += [f"#SBATCH --requeue\n"]
     init_lines += ["\n"]
 
     with open(slurm_name,'w+') as f:
