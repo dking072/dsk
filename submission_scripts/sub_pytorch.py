@@ -37,6 +37,7 @@ parser.add_argument("-qos", "--qos", default="savio_lowprio", help="Number of ho
 parser.add_argument("-test", "--dont_submit", action="store_true", help="Only write pbs files (don't submit to queue, useful for testing) (default: %(default)s)")
 parser.add_argument("-c", "--confirm", action="store_false", help="Confirm settings before submission (default: %(default)s)")
 parser.add_argument("-ks", "--keep_scripts", action="store_true", help="Copy scripts into directories instead of moving on submission")
+parser.add_argument("-r", "--requeue", action="store_true", help="Whether to requeue the job -- only use if your job is restartable!")
 
 #Scripts and parse arguments
 parser.add_argument("script_names", nargs="+", help="Scripts to run tests on (required)")
@@ -61,6 +62,7 @@ def confirm_settings():
     print("GPUs: ", str(args.gpus))
     print("Walltime: ", str(args.time) + " hours")
     print("Keep scripts: ", str(args.keep_scripts))
+    print("Requeue: ", str(args.requeue))
 
     answer=input("Are these settings okay? (y/n)\n")
     if answer=='y':
@@ -86,6 +88,8 @@ def write_slurm(method_name):
     f"#SBATCH --error={method_name}.e\n",
     f"#SBATCH --output={method_name}.log\n",
     ]
+    if args.requeue:
+        linit_lines += [f"#SBATCH --requeue\n"]
     init_lines += ["\n"]
 
     with open(slurm_name,'w+') as f:
@@ -93,8 +97,6 @@ def write_slurm(method_name):
             f.write(line)
 
         f.write("#MODULES\n")
-        if "amd" in args.queue:
-            f.write("module use /software/modulefiles-amd\n")
         f.write("module load python" + "\n")
         f.write("\n")
 
