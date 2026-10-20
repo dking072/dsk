@@ -1,0 +1,12 @@
+Hash commitment, 2026-10-20
+
+On October 20 2026 I held a file with the digests below: a snapshot of unpublished research code. The file stays private for now, but anyone later given it can check it against these values.
+
+Size:    250216457 bytes
+SHA-256: 4e728a3c081472428c8a7414a8a586b67c5d48e37f51423898e4a37d8a2460af
+SHA-512: 6653986c8c585879acbb50f934f7857d7739381871cb84283e6e41b4afe403615413c72bcf65987469d41c442c1f1d0d33548e2b60949a46d821a7fd0672f154
+
+Git commits contained (SHA-1):
+  f782affb5d4f3fd5521211fc78ee2370b5179d90
+  87f8efe7be215b21b4b790bfb2c791ccbca51f21
+
